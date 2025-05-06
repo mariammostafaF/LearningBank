@@ -48,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       if (success) {
-        Navigator.pushReplacementNamed(context, '/welcome');
+        Navigator.pushReplacementNamed(context, '/dashboard');
       }
     } catch (e) {
       setState(() {

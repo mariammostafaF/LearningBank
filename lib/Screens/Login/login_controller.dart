@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fintech/Screens/Dashboard/Dashboard.dart';
 
 class LoginController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -23,7 +24,12 @@ class LoginController {
 
       if (context.mounted) {
         // Navigate after successful login
-        Navigator.pushReplacementNamed(context, '/dashboard');
+        //Navigator.pushReplacementNamed(context, '/dashboard');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+        );
+
         return true;
       }
       return false;

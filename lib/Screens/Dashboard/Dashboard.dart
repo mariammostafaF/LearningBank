@@ -9,8 +9,7 @@ import 'package:fintech/Screens/Login/login_screen.dart';
 import 'package:fintech/Screens/Achievements/achievements.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-// Make sure to import your AvatarsScreen
+import 'package:cloud_firestore/cloud_firestore.dart'; // <-- Needed for Firestore
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -20,17 +19,55 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  double _levelProgress = 0.0;
+  int _currentLevel = 1;
+
+  Future<void> _loadUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+      if (doc.exists) {
+        final data = doc.data();
+        setState(() {
+          _userName = data?['name'] ?? 'User';
+          _currentLevel = data?['level'] ?? 1;
+          _levelProgress = (data?['progress'] ?? 0).toDouble();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   String? _currentAvatarPath;
   bool _isLoading = true;
+  String? _userName;
 
   @override
   void initState() {
     super.initState();
     _loadCurrentAvatar();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final uid = user.uid;
+      final doc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (doc.exists) {
+        setState(() {
+          _userName = doc['name'] ?? 'User';
+        });
+      }
+    }
   }
 
   Future<void> _loadCurrentAvatar() async {
-    // Mapping of avatar IDs to their image paths
     const avatarPaths = {
       'flower_girl': 'Assets/Images/avatar.png',
       'mystic_elf': 'Assets/Images/avatar1.png',
@@ -92,14 +129,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
-    var userId = "user200"; // Replace with actual user ID
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? "unknown_user";
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 245, 228, 202),
       appBar: AppBar(
         backgroundColor: const Color.fromARGB(255, 245, 228, 202),
-        title: const Text(
-          "Welcome, User!",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        title: Text(
+          "Welcome, ${_userName ?? 'User'}!",
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
         leading: IconButton(
@@ -119,11 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder:
-                    (context) => ProfileScreen(
-                      userId: userId,
-                      //onAvatarChanged: _handleAvatarChanged,
-                    ),
+                builder: (context) => ProfileScreen(userId: userId),
               ),
             );
           },
@@ -132,14 +169,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.black),
             onPressed: () async {
-              await FirebaseAuth.instance.signOut(); // Sign out the user
+              await FirebaseAuth.instance.signOut();
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("Logged out successfully")),
                 );
 
-                // Navigate to LoginScreen and remove all previous routes
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => const LoginScreen()),
